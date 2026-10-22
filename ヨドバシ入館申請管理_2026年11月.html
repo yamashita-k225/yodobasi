@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#185FA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ヨドバシ申請">
+
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  /* PWA起動時のスプラッシュ風 */
+  body { -webkit-user-select: none; user-select: none; }
+</style>
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>2026年11月｜ヨドバシ入館申請管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;background:#F5F5F5;color:#1A1A1A;font-size:16px;padding-bottom:env(safe-area-inset-bottom)}
+.app{max-width:480px;margin:0 auto}
+
+/* ヘッダー */
+.header{background:#fff;padding:16px 16px 12px;border-bottom:1px solid #E5E5E5;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600;display:flex;align-items:center;gap:6px}
+.header .subtitle{font-size:12px;color:#888;margin-top:2px}
+.content{padding:12px 12px 0}
+
+/* インポートバッジ */
+.import-badge{background:#E1F5EE;color:#085041;border:1px solid #5DCAA5;border-radius:8px;padding:7px 10px;font-size:12px;display:flex;align-items:center;gap:5px;margin-bottom:12px}
+
+/* 統計 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#fff;border-radius:10px;padding:10px 8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stat .label{font-size:11px;color:#888;margin-bottom:3px}
+.stat .val{font-size:22px;font-weight:700;color:#1A1A1A}
+.stat.warn .val{color:#BA7517}
+.stat.danger .val{color:#D32F2F}
+
+/* アラート */
+.alert-box{background:#FFF8E1;border:1px solid #FFD54F;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:none}
+.alert-box.show{display:block}
+.alert-title{font-size:13px;font-weight:600;color:#E65100;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.alert-item{font-size:12px;color:#BF360C;padding:3px 0;line-height:1.5;border-bottom:1px solid #FFE082}
+.alert-item:last-child{border-bottom:none}
+
+/* タブ */
+.tabs{display:flex;gap:0;margin-bottom:12px;background:#fff;border-radius:10px;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.tab{flex:1;background:transparent;border:none;border-radius:8px;padding:8px 4px;font-size:13px;font-weight:500;cursor:pointer;color:#888;transition:all .15s}
+.tab.active{background:#185FA5;color:#fff}
+.tab:active{opacity:.7}
+
+/* カード */
+.entry-list{display:flex;flex-direction:column;gap:8px}
+.entry-card{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;position:relative}
+.entry-card.urgent::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#D32F2F}
+.entry-card.warning::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#F57F17}
+.entry-card.urgent{padding-left:18px}
+.entry-card.warning{padding-left:18px}
+.entry-card.done{opacity:.5}
+.entry-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.entry-store{font-size:14px;font-weight:600;color:#1A1A1A;line-height:1.4}
+.entry-time{font-size:12px;color:#888;margin-top:2px;display:flex;align-items:center;gap:3px}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:4px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.badge-pending{background:#E3F2FD;color:#1565C0}
+.badge-applied{background:#E8F5E9;color:#2E7D32}
+.badge-done{background:#F5F5F5;color:#757575}
+.badge-urgent{background:#FFEBEE;color:#C62828}
+.badge-warning{background:#FFF8E1;color:#E65100}
+.entry-dates{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #F0F0F0}
+.date-item .dlabel{font-size:11px;color:#888;margin-bottom:2px}
+.date-item .dval{font-size:13px;font-weight:600;color:#1A1A1A;line-height:1.4}
+.date-item .dval .sub{font-size:11px;font-weight:400;color:#888;display:block}
+.date-item .dval.red{color:#C62828}
+.date-item .dval.red .sub{color:#E57373}
+.date-item .dval.amber{color:#E65100}
+.date-item .dval.amber .sub{color:#FFB74D}
+.entry-note{font-size:12px;color:#888;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0;display:flex;align-items:center;gap:4px}
+.entry-appno{font-size:12px;color:#555;margin-top:4px;display:flex;align-items:center;gap:4px}
+.entry-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.act-btn{flex:1;min-width:100px;background:#F8F8F8;border:1.5px solid #E0E0E0;border-radius:8px;padding:9px 8px;font-size:13px;font-weight:500;cursor:pointer;color:#555;display:flex;align-items:center;justify-content:center;gap:4px}
+.act-btn:active{opacity:.7}
+.act-btn.green{color:#2E7D32;border-color:#A5D6A7;background:#F1F8E9}
+.act-btn.red{color:#C62828;border-color:#FFCDD2;background:#FFF5F5}
+
+/* 追加ボタン */
+.add-btn{width:100%;background:#fff;border:2px dashed #BDBDBD;border-radius:12px;padding:16px;font-size:14px;font-weight:500;color:#999;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;margin-bottom:20px}
+.add-btn:active{background:#F5F5F5}
+
+/* フォーム */
+.add-form{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.form-title{font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:13px;font-weight:500;color:#555}
+.field input,.field textarea{width:100%;font-size:16px;padding:10px 12px;border:1.5px solid #E0E0E0;border-radius:8px;background:#fff;color:#1A1A1A;outline:none;font-family:inherit}
+.field input:focus,.field textarea:focus{border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.field textarea{height:72px;resize:none}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-row{display:flex;gap:8px;margin-top:4px}
+.btn-primary{flex:1;background:#185FA5;color:#fff;border:none;border-radius:10px;padding:13px 0;font-size:16px;font-weight:600;cursor:pointer}
+.btn-primary:active{background:#0C447C}
+.btn-cancel{background:#F5F5F5;color:#555;border:none;border-radius:10px;padding:13px 16px;font-size:16px;font-weight:500;cursor:pointer}
+.btn-cancel:active{background:#E0E0E0}
+
+/* トースト */
+.toast{display:none;background:#1B5E20;color:#E8F5E9;border-radius:10px;padding:12px 16px;font-size:14px;margin-bottom:10px;align-items:center;gap:8px;font-weight:500}
+.toast.show{display:flex}
+.empty{text-align:center;padding:3rem 1rem;color:#BDBDBD;font-size:15px}
+.empty-icon{font-size:40px;display:block;margin:0 auto 8px}
+
+/* ===== PC対応 (768px以上) ===== */
+@media(min-width:768px){
+  body{background:#ECEEF2}
+  .app{max-width:1200px}
+  .header{padding:20px 32px 16px;border-radius:0}
+  .header-top{display:flex;align-items:center;justify-content:space-between}
+  .header h1{font-size:22px}
+  .header .subtitle{font-size:13px;margin-top:4px}
+  .content{padding:24px 32px;display:grid;grid-template-columns:320px 1fr;column-gap:24px;align-items:start}
+  .left-col{grid-column:1}
+  .right-col{grid-column:2}
+  .import-badge{font-size:13px;padding:9px 14px;margin-bottom:16px}
+  .stats{gap:12px;margin-bottom:16px}
+  .stat{padding:16px 12px;border-radius:12px}
+  .stat .label{font-size:12px}
+  .stat .val{font-size:28px}
+  .alert-box{margin-bottom:16px}
+  .alert-title{font-size:14px}
+  .alert-item{font-size:13px}
+  .tabs{margin-bottom:16px;border-radius:12px}
+  .tab{font-size:14px;padding:10px 8px}
+  .entry-card{padding:16px 20px;border-radius:14px}
+  .entry-store{font-size:15px}
+  .entry-time{font-size:13px}
+  .entry-dates{gap:12px;padding-top:12px}
+  .date-item .dlabel{font-size:12px}
+  .date-item .dval{font-size:14px}
+  .act-btn{font-size:14px;padding:10px 14px}
+  .add-btn{font-size:15px;padding:18px;border-radius:14px;margin-bottom:24px}
+  .add-form{padding:20px;border-radius:14px}
+  .form-title{font-size:14px}
+  .field label{font-size:14px}
+  .field input,.field textarea{font-size:15px;padding:11px 14px}
+  .entry-list{gap:10px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🏬 ヨドバシ入館申請管理・11月</h1>
+    <div class="subtitle">配送7日前までに申請を完了してください</div>
+    <button id="notifBtn" onclick="requestNotify()" style="margin-top:8px;background:#185FA5;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px">🔔 通知を有効にする</button>
+  </div>
+
+  <div class="content">
+    <!-- 左カラム（PC時）: 統計・アラート・タブ・フォーム -->
+    <div class="left-col">
+      <div class="import-badge">✅ カレンダーより11月28件取り込み済み</div>
+      <div class="toast" id="toast"><span id="toastMsg"></span></div>
+      <div class="stats" id="stats"></div>
+      <div class="alert-box" id="alertBox">
+        <div class="alert-title">⚠️ 申請期限アラート</div>
+        <div id="alertItems"></div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('all')">すべて</button>
+        <button class="tab" onclick="setTab('pending')">未申請</button>
+        <button class="tab" onclick="setTab('applied')">申請済</button>
+      </div>
+      <div id="addFormWrap" style="display:none">
+        <div class="add-form">
+          <div class="form-title">新規配送予定を追加</div>
+          <div class="field"><label>店舗名・拠点 ＊</label><input type="text" id="fStore" placeholder="例: ヨドバシ梅田" autocomplete="off"/></div>
+          <div class="field"><label>配送予定日 ＊</label><input type="date" id="fDelivery"/></div>
+          <div class="field"><label>時間帯・荷物種別</label><input type="text" id="fCargo" placeholder="例: 午後2時〜4時"/></div>
+          <div class="field-row">
+            <div class="field"><label>申請番号</label><input type="text" id="fAppNo" placeholder="YDB-2026-XXXXX"/></div>
+            <div class="field"><label>担当者</label><input type="text" id="fContact" placeholder="物流部 田中"/></div>
+          </div>
+          <div class="field"><label>メモ</label><textarea id="fNote" placeholder="備考・注意事項など"></textarea></div>
+          <div class="btn-row">
+            <button class="btn-cancel" onclick="hideForm()">キャンセル</button>
+            <button class="btn-primary" onclick="addEntry()">追加する</button>
+          </div>
+        </div>
+      </div>
+      <button class="add-btn" onclick="showForm()" id="addBtn">＋ 配送予定を追加する</button>
+    </div>
+
+    <!-- 右カラム（PC時）: カード一覧 -->
+    <div class="right-col">
+      <div id="entryList" class="entry-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const D=7;
+const REPORT_STORES=['Akiba','吉祥寺','さいたま新都心'];
+function needsReport(store){return REPORT_STORES.some(s=>store.includes(s));}
+const DATA=[
+  {
+    "id": 1101,
+    "store": "ヨドバシカメラ マルチメディア横浜",
+    "delivery": "2026-11-02",
+    "cargo": "午前10時〜午後12時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1102,
+    "store": "ヨドバシカメラ マルチメディア吉祥寺",
+    "delivery": "2026-11-02",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1103,
+    "store": "ヨドバシカメラ マルチメディア梅田",
+    "delivery": "2026-11-02",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1104,
+    "store": "ヨドバシカメラ マルチメディア川崎ルフロン",
+    "delivery": "2026-11-04",
+    "cargo": "午前10時〜午後12時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1105,
+    "store": "ヨドバシカメラ マルチメディア池袋",
+    "delivery": "2026-11-04",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1106,
+    "store": "ヨドバシカメラ マルチメディアさいたま新都心",
+    "delivery": "2026-11-04",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1107,
+    "store": "ヨドバシカメラ マルチメディア千葉",
+    "delivery": "2026-11-04",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1108,
+    "store": "ヨドバシカメラ マルチメディアAkiba",
+    "delivery": "2026-11-06",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "【9号】",
+    "status": "pending"
+  },
+  {
+    "id": 1109,
+    "store": "ヨドバシカメラ サンシャインサカエ店",
+    "delivery": "2026-11-09",
+    "cargo": "午前10時〜午後1時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1110,
+    "store": "ヨドバシカメラ マルチメディア京都",
+    "delivery": "2026-11-09",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1111,
+    "store": "ヨドバシカメラ マルチメディア梅田",
+    "delivery": "2026-11-09",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1112,
+    "store": "ヨドバシカメラ 新宿西口本店",
+    "delivery": "2026-11-12",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1113,
+    "store": "ヨドバシカメラ マルチメディアAkiba",
+    "delivery": "2026-11-12",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "【9号】",
+    "status": "pending"
+  },
+  {
+    "id": 1114,
+    "store": "ヨドバシカメラ マルチメディア横浜",
+    "delivery": "2026-11-13",
+    "cargo": "午前10時〜午後12時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1115,
+    "store": "ヨドバシカメラ マルチメディア梅田",
+    "delivery": "2026-11-16",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1116,
+    "store": "ヨドバシカメラ マルチメディア吉祥寺",
+    "delivery": "2026-11-17",
+    "cargo": "午前10時〜午後12時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1117,
+    "store": "ヨドバシカメラ マルチメディア千葉",
+    "delivery": "2026-11-17",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1118,
+    "store": "ヨドバシカメラ マルチメディアAkiba",
+    "delivery": "2026-11-18",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "【9号】",
+    "status": "pending"
+  },
+  {
+    "id": 1119,
+    "store": "ヨドバシカメラ マルチメディア池袋",
+    "delivery": "2026-11-18",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1120,
+    "store": "ヨドバシカメラ マルチメディアさいたま新都心",
+    "delivery": "2026-11-18",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1121,
+    "store": "ヨドバシカメラ マルチメディア川崎ルフロン",
+    "delivery": "2026-11-20",
+    "cargo": "午前10時〜午後12時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1122,
+    "store": "ヨドバシカメラ マルチメディア京都",
+    "delivery": "2026-11-23",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1123,
+    "store": "ヨドバシカメラ サンシャインサカエ店",
+    "delivery": "2026-11-24",
+    "cargo": "午前10時〜午後1時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1124,
+    "store": "ヨドバシカメラ マルチメディアAkiba",
+    "delivery": "2026-11-26",
+    "cargo": "午前10時〜午後12時",
+    "appNo": "",
+    "contact": "",
+    "note": "【9号】",
+    "status": "pending"
+  },
+  {
+    "id": 1125,
+    "store": "ヨドバシカメラ 新宿西口本店",
+    "delivery": "2026-11-26",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1126,
+    "store": "ヨドバシカメラ マルチメディア横浜",
+    "delivery": "2026-11-27",
+    "cargo": "午後12時〜2時",
+    "appNo": "",
+    "contact": "",
+    "note": "【吸・シ】",
+    "status": "pending"
+  },
+  {
+    "id": 1127,
+    "store": "ヨドバシカメラ マルチメディア梅田",
+    "delivery": "2026-11-30",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  },
+  {
+    "id": 1128,
+    "store": "ヨドバシカメラ マルチメディア池袋",
+    "delivery": "2026-11-30",
+    "cargo": "午後2時〜4時",
+    "appNo": "",
+    "contact": "",
+    "note": "",
+    "status": "pending"
+  }
+];
+
+let entries=JSON.parse(localStorage.getItem('ydb_2026_nov_v1')||'null');
+if(!entries){entries=[...DATA];save();}
+let nextId=Math.max(1100,...entries.map(e=>e.id))+1;
+let tab='all';
+
+function save(){localStorage.setItem('ydb_2026_nov_v1',JSON.stringify(entries))}
+function dd(d){const t=new Date();t.setHours(0,0,0,0);const x=new Date(d);x.setHours(0,0,0,0);return Math.round((x-t)/864e5)}
+function dl(d){const x=new Date(d);x.setDate(x.getDate()-D);return x.toISOString().slice(0,10)}
+function fmt(d){if(!d)return'-';const x=new Date(d);return`${x.getMonth()+1}/${x.getDate()}(${['日','月','火','水','木','金','土'][x.getDay()]})`}
+function urg(e){
+  if(e.status==='done'||e.status==='applied')return'ok';
+  const d=dd(dl(e.delivery));
+  if(d<0)return'over';if(d===0)return'today';if(d<=1)return'urgent';if(d<=3)return'warn';return'ok2';
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent='✓ '+msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function render(){
+  const list=entries.filter(e=>tab==='all'||e.status===tab).sort((a,b)=>a.delivery.localeCompare(b.delivery));
+  const pend=entries.filter(e=>e.status==='pending');
+  const appl=entries.filter(e=>e.status==='applied');
+  const urgList=pend.filter(e=>['over','today','urgent'].includes(urg(e)));
+
+  document.getElementById('stats').innerHTML=`
+    <div class="stat${urgList.length?' danger':''}"><div class="label">⚡ 要注意</div><div class="val">${urgList.length}</div></div>
+    <div class="stat warn"><div class="label">📋 未申請</div><div class="val">${pend.length}</div></div>
+    <div class="stat"><div class="label">✅ 申請済</div><div class="val">${appl.length}</div></div>
+  `;
+
+  const alItems=entries.filter(e=>e.status==='pending'&&['over','today','urgent','warn'].includes(urg(e)));
+  const ab=document.getElementById('alertBox');
+  if(alItems.length){
+    ab.classList.add('show');
+    document.getElementById('alertItems').innerHTML=alItems.map(e=>{
+      const d=dd(dl(e.delivery));
+      const msg=d<0?`期限${Math.abs(d)}日超過`:d===0?'本日が期限':`期限まで${d}日`;
+      return`<div class="alert-item"><strong>${e.store}</strong>（${fmt(e.delivery)}）— ${msg}</div>`;
+    }).join('');
+  }else ab.classList.remove('show');
+
+  const el=document.getElementById('entryList');
+  if(!list.length){el.innerHTML='<div class="empty"><span class="empty-icon">📭</span>該当する予定はありません</div>';return;}
+
+  el.innerHTML=list.map(e=>{
+    const u=urg(e);
+    const dlDate=dl(e.delivery);
+    const dDiff=dd(dlDate);
+    const devDiff=dd(e.delivery);
+    let cc='entry-card';
+    if(e.status!=='done'&&e.status!=='applied'){
+      if(['over','today','urgent'].includes(u))cc+=' urgent';
+      else if(u==='warn')cc+=' warning';
+    }
+    if(e.status==='done')cc+=' done';
+
+    const badge=
+      e.status==='done'?'<span class="badge badge-done">✓ 完了</span>':
+      e.status==='applied'?'<span class="badge badge-applied">✓ 申請済み</span>':
+      u==='over'?'<span class="badge badge-urgent">⚠ 期限超過</span>':
+      u==='today'?'<span class="badge badge-urgent">⚠ 本日期限</span>':
+      u==='urgent'?'<span class="badge badge-urgent">⚠ 急いで申請</span>':
+      u==='warn'?'<span class="badge badge-warning">⏰ 要確認</span>':
+      '<span class="badge badge-pending">📋 未申請</span>';
+
+    let dlClass='dval';
+    if(e.status==='pending'){if(dDiff<=0)dlClass='dval red';else if(dDiff<=2)dlClass='dval amber';}
+
+    const devStr=devDiff===0?'本日':devDiff>0?`${devDiff}日後`:`${Math.abs(devDiff)}日前`;
+    const dlStr=dDiff<0?`${Math.abs(dDiff)}日超過`:dDiff===0?'本日':dDiff===1?'明日':`${dDiff}日後`;
+
+    let acts='';
+    if(e.status==='pending')acts+=`<button class="act-btn green" onclick="markApplied(${e.id})">✓ 申請完了にする</button>`;
+    if(e.status==='applied')acts+=`<button class="act-btn red" onclick="undoApplied(${e.id})">↩ 申請取り消し</button>`;
+    acts+=`<button class="act-btn red" onclick="delEntry(${e.id})">🗑 削除</button>`;
+
+    const appliedHtml=e.appliedAt?`<div class="entry-appno">🕐 申請完了: ${e.appliedAt}</div>`:'';
+    const contactHtml=e.contact?`<div class="entry-appno">👤 担当: ${e.contact}</div>`:'';
+    const noteHtml=e.note?`<div class="entry-note">🏷 ${e.note}</div>`:'';
+    const appHtml=e.appNo?`<div class="entry-appno">🔖 申請番号: ${e.appNo}</div>`:'';
+
+    return`<div class="${cc}">
+      <div class="entry-top">
+        <div style="flex:1;min-width:0">
+          <div class="entry-store">${e.store}</div>
+          <div class="entry-time">⏰ ${e.cargo}</div>
+          ${needsReport(e.store)?'<div style="margin-top:4px;display:inline-flex;align-items:center;gap:3px;background:#FFF3E0;color:#E65100;border:1px solid #FFCC80;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">📝 作業内容報告書が必要</div>':''}
+        </div>
+        ${badge}
+      </div>
+      <div class="entry-dates">
+        <div class="date-item"><div class="dlabel">🚚 配送予定日</div><div class="dval">${fmt(e.delivery)}<span class="sub">${devStr}</span></div></div>
+        <div class="date-item"><div class="dlabel">📅 申請期限（7日前）</div><div class="${dlClass}">${fmt(dlDate)}<span class="sub">${dlStr}</span></div></div>
+      </div>
+      ${appHtml}${contactHtml}${appliedHtml}${noteHtml}
+      <div class="entry-actions">${acts}</div>
+    </div>`;
+  }).join('');
+}
+
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['all','pending','applied'][i]===t));
+  render();
+}
+function showForm(){
+  document.getElementById('addFormWrap').style.display='block';
+  document.getElementById('addBtn').style.display='none';
+  const td=new Date();td.setDate(td.getDate()+5);
+  document.getElementById('fDelivery').value=td.toISOString().slice(0,10);
+  document.getElementById('fStore').focus();
+}
+function hideForm(){document.getElementById('addFormWrap').style.display='none';document.getElementById('addBtn').style.display='flex';}
+function addEntry(){
+  const store=document.getElementById('fStore').value.trim();
+  const delivery=document.getElementById('fDelivery').value;
+  if(!store||!delivery){alert('店舗名と配送予定日は必須です');return;}
+  entries.push({id:nextId++,store,delivery,cargo:document.getElementById('fCargo').value.trim(),appNo:document.getElementById('fAppNo').value.trim(),contact:document.getElementById('fContact').value.trim(),note:document.getElementById('fNote').value.trim(),status:'pending'});
+  save();hideForm();
+  ['fStore','fCargo','fAppNo','fContact','fNote'].forEach(id=>document.getElementById(id).value='');
+  render();toast('予定を追加しました');
+}
+function markApplied(id){const e=entries.find(x=>x.id===id);if(e){e.status='applied';e.appliedAt=new Date().toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});save();render();toast('申請済みにしました');}}
+function undoApplied(id){const e=entries.find(x=>x.id===id);if(e){e.status='pending';e.appliedAt='';save();render();toast('未申請に戻しました');}}
+function delEntry(id){if(confirm('この予定を削除しますか？')){entries=entries.filter(x=>x.id!==id);save();render();}}
+
+// ===== 通知機能 =====
+function requestNotify(){
+  if(!('Notification' in window)){alert('このブラウザは通知に対応していません');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){
+      document.getElementById('notifBtn').textContent='🔔 通知ON';
+      document.getElementById('notifBtn').style.background='#2E7D32';
+      localStorage.setItem('ydb_notify','on');
+      toast('通知を有効にしました');
+      checkNotify();
+    }else{
+      toast('通知が拒否されました。ブラウザの設定から許可してください');
+    }
+  });
+}
+
+function checkNotify(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const notified=JSON.parse(localStorage.getItem('ydb_notified_'+(today.toISOString().slice(0,10)))||'[]');
+  entries.filter(e=>e.status==='pending').forEach(e=>{
+    const dlDate=new Date(dl(e.delivery));dlDate.setHours(0,0,0,0);
+    const diff=Math.round((dlDate-today)/864e5);
+    // 申請期限7日前・3日前・1日前・当日に通知
+    const triggers=[7,3,1,0];
+    triggers.forEach(t=>{
+      const key=e.id+'_'+t;
+      if(diff===t&&!notified.includes(key)){
+        const msg=t===0?'本日が申請期限です！':t===1?'明日が申請期限です！':`申請期限まであと${t}日です`;
+        new Notification('🏬 ヨドバシ入館申請',{
+          body:`【${e.store}】\n配送日: ${fmt(e.delivery)}\n${msg}`,
+          icon:'',tag:key
+        });
+        notified.push(key);
+      }
+    });
+  });
+  localStorage.setItem('ydb_notified_'+(today.toISOString().slice(0,10)),JSON.stringify(notified));
+}
+
+// ページ読み込み時に通知状態を復元＆チェック
+window.addEventListener('load',()=>{
+  if(('Notification' in window)&&localStorage.getItem('ydb_notify')==='on'&&Notification.permission==='granted'){
+    const btn=document.getElementById('notifBtn');
+    btn.textContent='🔔 通知ON';btn.style.background='#2E7D32';
+    checkNotify();
+  }
+});
+
+render();
+</script>
+
+
+</body>
+</html>
